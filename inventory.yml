@@ -1,0 +1,6 @@
+---
+hosts:
+  localhost:
+   vars:
+     ansible_connection: local
+     node_exporter_version: 1.4.0

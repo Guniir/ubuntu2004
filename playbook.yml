@@ -1,0 +1,78 @@
+---
+- name: Развертывание Grafana и Prometheus
+  hosts: all
+  become: yes
+  vars:
+    node_exporter_version: 1.4.0
+
+  tasks:
+  - name: Установка часового пояса
+    command: timedatectl set-timezone Europe/Moscow
+
+  - name: Установка дополнительных пакетов 
+    apt: name={{ item }} state=latest update_cache=yes
+    loop: [ 'apt-transport-https', 'ca-certificates', 'lsb-release', 'curl', 'software-properties-common', 'python3-pip' ]
+
+  - name: Добавление GPG ключа
+    apt_key:
+     url: https://download.docker.com/linux/ubuntu/gpg
+     state: present
+
+  - name: Добавление репозитория Docker
+    apt_repository:
+     repo: deb https://download.docker.com/linux/ubuntu focal stable
+     state: present
+  
+  - name: Установка docker-ce
+    apt: update_cache=yes name=docker-ce state=latest
+
+  - name: Установка Docker 
+    pip: name={{ item }}
+    loop: [ 'docker', 'docker-compose' ]
+
+  - name: Установка Docker-compose
+    get_url:
+     url: https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-linux-x86_64
+     dest: /usr/local/bin/docker-compose
+     mode: 'u+x,g+x'
+
+  - name: Скачивание node exporter
+    get_url:
+     url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+     dest: /tmp
+ 
+  - name: Разархивирование node exporter
+    unarchive:
+     remote_src: yes
+     src: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
+     dest: /tmp
+   
+  - name: Копирование node exporter в /usr/local/bin    
+    copy:
+     src: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter
+     dest: /usr/local/bin/node_exporter
+     remote_src: yes
+     owner: root
+     group: root
+     mode: 0755
+     
+  - name: Установка службы из шаблона
+    template:
+     src: node_exporter.service.j2
+     dest: /etc/systemd/system/node_exporter.service
+     owner: root
+     group: root
+     mode: 0600
+     
+  - name: Настройка systemd на использование службы
+    systemd:
+     daemon_reload: yes
+     enabled: yes
+     state: started
+     name: node_exporter.service
+
+  - name: Развертывание Docker Compose 
+    docker_compose:
+     project_src: /vagrant_files
+     files:
+     - docker-compose.yml 
