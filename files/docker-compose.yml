@@ -17,9 +17,9 @@ services:
   restart: always
   container_name: grafana
   volumes:
-   - /vagrant_files/grafana.ini:/etc/grafana/grafana.ini
-   - /vagrant_files/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
-   - /vagrant_files/node-exporter-full.json:/usr/share/grafana/node-exporter-full.json
+   - /vagrant_files/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources/
+   - /vagrant_files/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+   - /vagrant_files/grafana/provisioning/grafana.ini:/etc/grafana/grafana.ini
   ports:
    - 3000:3000
   links:
